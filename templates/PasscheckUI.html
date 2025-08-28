@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PassCheck Oracle</title>
+    <style>
+        :root {
+            --active-color: #0dd2ff; /* Default active color (PassCheck Blue) */
+        }
+
+        body {
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center horizontally */
+            justify-content: flex-start; /* Align to top */
+            min-height: 100vh;
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-image 0.5s ease;
+            background-image: url('{{ url_for('static', filename='images/passcheckbackgroundblue.png') }}');
+            position: relative; /* For positioning the settings button */
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-top: 20px;
+            width: 100%;
+            text-align: center;
+            color: var(--active-color);
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2em;
+            text-align: center;
+            width: 100%;
+            max-width: 800px;
+            padding: 1em;
+            border-radius: 10px;
+        }
+
+        .tab-menu {
+            display: flex;
+            justify-content: center;
+            gap: 2em;
+            margin-bottom: 1.5em;
+        }
+
+        /* Base button styles */
+        .button {
+            color: white;
+            border: none;
+            padding: 0.75em 2em;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+            width: 220px;
+            text-align: center;
+            background-color: #444; /* Default button color */
+        }
+
+        /* Individual button colors */
+        #passcheck-btn {
+            background-color: var(--active-color);
+        }
+
+        #generate-btn,
+        .generate-button {
+            background-color: #9e30a9;
+        }
+
+        #crack-btn,
+        .crack-button {
+            background-color: #ff5757;
+        }
+
+        #settings-btn,
+        .settings-button {
+            background-color: #28a745;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .input-container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .input-content {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+            margin-bottom: 2em;
+            /* Added frame styles */
+            background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent dark background */
+            border: 2px solid #333; /* Dark border */
+            border-radius: 8px;
+            padding: 0.5em;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 0.5em;
+            font-size: 1.1rem;
+            color: var(--active-color);
+            background-color: transparent;
+            border: none;
+            outline: none;
+            transition: border-color 0.3s, color 0.3s;
+            border-bottom: 2px solid var(--active-color);
+        }
+
+        .input-label {
+            color: var(--active-color);
+            margin-right: 10px;
+        }
+
+        /* Enhanced Placeholder Styling with Vendor Prefixes */
+        .input-field::placeholder {
+            color: var(--active-color);
+            opacity: 1;
+            transition: color 0.3s ease;
+        }
+
+        .input-field:focus {
+            border-color: var(--active-color);
+        }
+
+        .show-password,
+        .copy-password {
+            margin-left: 10px;
+            cursor: pointer;
+            color: var(--active-color);
+            font-size: 1.5rem;
+            align-self: flex-end;
+        }
+
+        .card {
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent dark background */
+            border-radius: 10px;
+            padding: 1.5em;
+            width: 100%;
+            margin-bottom: 2em;
+            box-shadow: 0 0 40px 15px var(--active-color);
+            position: relative; /* To position the strength circle absolutely */
+        }
+
+        .score-text {
+            color: var(--active-color);
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 1em;
+        }
+
+        .card__list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .card__list_item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 1em 0;
+        }
+
+        .true-check {
+            color: #28a745;
+        }
+
+        .false-check {
+            color: #dc3545;
+        }
+
+        .list_text {
+            flex-grow: 1;
+            text-align: left;
+            padding-left: 1em;
+        }
+
+        /* Password Strength Circle */
+        .strength-circle {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background-color: rgb(40, 12, 253); /* Initial color */
+            box-shadow: 0 0 5px rgb(57, 47, 249);
+            transition: background 0.3s ease;
+        }
+
+        /* Additional styles for Crack Tab */
+        .crack-section {
+            display: flex;
+            align-items: center;
+            gap: 1em;
+            justify-content: center;
+            margin-bottom: 1em;
+        }
+
+        .toggle-border {
+            border: 2px solid #ff5757; /* Set border to red */
+            border-radius: 130px;
+            padding: 1px 2px;
+            background: linear-gradient(to bottom right, rgba(255, 87, 87, 0.5), rgba(220, 220, 220, 0.5)), white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 40px;
+        }
+
+        .toggle-border input[type="checkbox"] {
+            display: none;
+        }
+
+        .toggle-border label {
+            position: relative;
+            display: inline-block;
+            width: 65px;
+            height: 20px;
+            background: #d13613; /* Default to red (off) */
+            border-radius: 80px;
+            cursor: pointer;
+            box-shadow: inset 0 0 16px rgba(0,0,0,.3);
+            transition: background .5s;
+        }
+
+        .toggle-border input[type="checkbox"]:checked + label {
+            background: #13d162; /* Turn green when checked */
+        }
+
+        .handle {
+            position: absolute;
+            top: -8px;
+            left: -10px;
+            width: 35px;
+            height: 35px;
+            border: 1px solid #e5e5e5;
+            background: white;
+            border-radius: 50%;
+            transition: left .4s;
+        }
+
+        .toggle-border input[type="checkbox"]:checked + label > .handle {
+            left: calc(100% - 35px + 10px);
+        }
+
+        .show-process-text {
+            color: #ff5757; /* Set text to red */
+            margin-left: 10px;
+        }
+
+        /* Scrollable container for cracking process */
+        .scrollable-container {
+            background-color: rgba(255, 87, 87, 0.2); /* Light red transparent */
+            border-radius: 10px;
+            padding: 1.5em;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            text-align: center;
+            box-shadow: 0 0 40px 15px var(--active-color);
+            margin-bottom: 2.5em;
+            color: white;
+        }
+
+        .process-text {
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Timer text */
+        .timer-text {
+            color: #ff5757;
+            font-size: 1.2rem;
+            margin-bottom: 1em;
+            font-weight: bold;
+        }
+
+        /* Settings Button Styles */
+        .settings-icon-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: transparent;
+            border: none;
+            color: var(--active-color);
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            transition: color 0.3s;
+        }
+
+        .settings-icon-button .svg-icon {
+            margin-right: 5px;
+        }
+
+        .settings-icon-button .label {
+            font-size: 1rem;
+            color: white;
+        }
+
+        .settings-icon-button:hover {
+            color: #fff;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            .button {
+                width: 180px;
+                padding: 0.6em 1.5em;
+                font-size: 0.9rem;
+            }
+
+            .input-content {
+                max-width: 100%;
+            }
+
+            .settings-icon-button {
+                top: 10px;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body id="body"
+    data-passcheck-bg="{{ url_for('static', filename='images/passcheckbackgroundblue.png') }}"
+    data-generate-bg="{{ url_for('static', filename='images/passcheckbackgroundpurple.png') }}"
+    data-crack-bg="{{ url_for('static', filename='images/passcheckbackgroundred.png') }}"
+    data-settings-bg="{{ url_for('static', filename='images/passcheckbackgroundgreen.png') }}">
+    <!-- Settings Button -->
+    <button class="settings-icon-button" id="settings-btn">
+        <svg
+            class="svg-icon"
+            fill="none"
+            height="20"
+            viewBox="0 0 20 20"
+            width="20"
+            xmlns="http://www.w3.org/2000/svg"
+        >
+            <g stroke="white" stroke-linecap="round" stroke-width="1.5">
+                <circle cx="10" cy="10" r="2.5"></circle>
+                <path
+                    clip-rule="evenodd"
+                    d="m8.39079 2.80235c.53842-1.51424 2.67991-1.51424 3.21831-.00001.3392.95358 1.4284 1.40477 2.3425.97027 1.4514-.68995 2.9657.82427 2.2758 2.27575-.4345.91407.0166 2.00334.9702 2.34248 1.5143.53842 1.5143 2.67996 0 3.21836-.9536.3391-1.4047 1.4284-.9702 2.3425.6899 1.4514-.8244 2.9656-2.2758 2.2757-.9141-.4345-2.0033.0167-2.3425.9703-.5384 1.5142-2.67989 1.5142-3.21831 0-.33914-.9536-1.4284-1.4048-2.34247-.9703-1.45148.6899-2.96571-.8243-2.27575-2.2757.43449-.9141-.01669-2.0034-.97028-2.3425-1.51422-.5384-1.51422-2.67994.00001-3.21836.95358-.33914 1.40476-1.42841.97027-2.34248-.68996-1.45148.82427-2.9657 2.27575-2.27575.91407.4345 2.00333-.01669 2.34247-.97026z"
+                    fill-rule="evenodd"
+                ></path>
+            </g>
+        </svg>
+        <span class="label">Settings</span>
+    </button>
+
+    <!-- Title at the top -->
+    <div id="title" class="title">PassCheck Oracle</div>
+
+    <div class="container">
+        <!-- Tab Menu for Switching Between Tabs -->
+        <div class="tab-menu">
+            <button class="button tab-link" id="passcheck-btn" data-tab="passcheck">Pass Check</button>
+            <button class="button tab-link" id="generate-btn" data-tab="generate">Generate</button>
+            <button class="button tab-link" id="crack-btn" data-tab="crack">Crack</button>
+        </div>
+
+        <!-- PassCheck Tab -->
+        <div class="tab-content active" id="passcheck">
+            <!-- Password Input -->
+            <div class="input-container">
+                <div class="input-content">
+                    <input class="input-field" id="password" type="password" required placeholder="Enter your password" />
+                    <span class="show-password" id="show-password">👁️</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <!-- Strength Circle -->
+                <div class="strength-circle" id="strength-circle"></div>
+
+                <div class="score-text" id="score">Similarity: 0% | Score: 0/100 | Unmatched Percentage: 0%</div>
+                <ul class="card__list" id="feedback-list">
+                    <!-- Feedback list will be injected here -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- Generate Tab -->
+        <div class="tab-content" id="generate">
+            <div class="input-container">
+                <div class="input-content">
+                    <input class="input-field" id="generated-password" type="text" readonly placeholder="Generated password will appear here" />
+                    <span class="copy-password" id="copy-password">📋</span>
+                </div>
+            </div>
+            <button class="button generate-button" id="generate-password-btn">Generate Password</button>
+        </div>
+
+        <!-- Crack Tab -->
+        <div class="tab-content" id="crack">
+            <div class="input-container">
+                <div class="input-content">
+                    <input class="input-field" id="password-to-crack" type="text" placeholder="Enter password to crack" />
+                </div>
+            </div>
+            <div class="crack-section">
+                <button class="button crack-button" id="crack-password-btn">Crack Password</button>
+                <div class="toggle-border">
+                    <input id="show-process-switch" type="checkbox">
+                    <label for="show-process-switch">
+                        <div class="handle"></div>
+                    </label>
+                </div>
+                <span class="show-process-text">Show Processes</span>
+            </div>
+            <div class="timer-text" id="timer-text"></div>
+            <div id="process-container" class="scrollable-container" style="display: none;">
+                <div class="score-text">Cracking Process</div>
+                <ul id="process-list" class="card__list">
+                    <!-- Cracking process will be appended here -->
+                </ul>
+            </div>
+            <div class="score-text" id="result-text"></div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div class="tab-content" id="settings">
+            <!-- Settings Tab Content -->
+            <div class="input-container">
+                <div class="input-content">
+                    <label for="crack-time-limit" class="input-label">Cracking Time Limit (seconds):</label>
+                    <input class="input-field" id="crack-time-limit" type="number" min="1" value="120" />
+                </div>
+            </div>
+            <!-- Use Personal Information Checkbox -->
+            <div class="input-container">
+                <div class="input-content">
+                    <input type="checkbox" id="use-personal-info" />
+                    <label for="use-personal-info" class="input-label">Use Personal Information (optional)</label>
+                </div>
+            </div>
+            <!-- Personal Information Fields -->
+            <div id="personal-info-fields" style="display: none;">
+                <div class="input-container">
+                    <div class="input-content">
+                        <input class="input-field" id="settings-full-name" type="text" placeholder="Enter your full name" />
+                    </div>
+                </div>
+                <div class="input-container">
+                    <div class="input-content">
+                        <input class="input-field" id="settings-dob" type="date" placeholder="Enter your date of birth" />
+                    </div>
+                </div>
+                <div class="input-container">
+                    <div class="input-content">
+                        <input class="input-field" id="settings-location" type="text" placeholder="Enter your location" />
+                    </div>
+                </div>
+                <div class="input-container">
+                    <div class="input-content">
+                        <input class="input-field" id="settings-phone" type="tel" placeholder="Enter your phone number" />
+                    </div>
+                </div>
+                <div class="input-container">
+                    <div class="input-content">
+                        <input class="input-field" id="settings-email" type="email" placeholder="Enter your email address" />
+                    </div>
+                </div>
+            </div>
+            <!-- Save Settings Button -->
+            <button class="button settings-button" id="save-settings-btn">Save Settings</button>
+        </div>
+
+    </div>
+
+    <script>
+        // Tab Navigation
+        const tabLinks = document.querySelectorAll('.tab-link');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const body = document.getElementById('body');
+        const title = document.getElementById('title');
+
+        const passcheckBtn = document.getElementById('passcheck-btn');
+        const generateBtn = document.getElementById('generate-btn');
+        const crackBtn = document.getElementById('crack-btn');
+        const settingsBtn = document.getElementById('settings-btn');
+
+        const tabColors = {
+            'passcheck': '#0dd2ff',      // Blue
+            'generate': '#9e30a9',      // Purple
+            'crack': '#ff5757',          // Red
+            'settings': '#28a745'       // Green
+        };
+
+        // Get background image URLs from data attributes
+        const passcheckBg = body.dataset.passcheckBg;
+        const generateBg = body.dataset.generateBg;
+        const crackBg = body.dataset.crackBg;
+        const settingsBg = body.dataset.settingsBg;
+
+        // Set PassCheck as the default active tab
+        window.onload = function () {
+            activateTab('passcheck', passcheckBtn);
+        };
+
+        tabLinks.forEach(button => {
+            button.addEventListener('click', function () {
+                const tabId = this.getAttribute('data-tab');
+                activateTab(tabId, this);
+                switch(tabId) {
+                    case 'passcheck':
+                        body.style.backgroundImage = `url('${passcheckBg}')`;
+                        break;
+                    case 'generate':
+                        body.style.backgroundImage = `url('${generateBg}')`;
+                        break;
+                    case 'crack':
+                        body.style.backgroundImage = `url('${crackBg}')`;
+                        break;
+                    default:
+                        break;
+                }
+            });
+        });
+
+        function activateTab(tabId, button) {
+            tabContents.forEach(content => content.classList.remove('active'));
+            tabLinks.forEach(link => link.style.backgroundColor = '#444'); // Reset button colors
+            document.getElementById(tabId).classList.add('active');
+
+            // Get the color associated with the tab
+            const color = tabColors[tabId];
+
+            // Update the title color
+            title.style.color = color;
+
+            // Update the CSS variable --active-color
+            document.documentElement.style.setProperty('--active-color', color);
+
+            // Update the box-shadow of the cards in the active tab
+            const cards = document.querySelectorAll(`#${tabId} .card`);
+            cards.forEach(card => {
+                card.style.boxShadow = `0 0 40px 15px ${color}`;
+            });
+
+            // Set the active button color
+            if (button) {
+                button.style.backgroundColor = color;
+            }
+
+            // Update the input field text color and placeholder color
+            const inputFields = document.querySelectorAll(`#${tabId} .input-field`);
+            inputFields.forEach(input => {
+                input.style.color = color;
+                input.style.borderBottomColor = color;
+            });
+
+            // Update icons color (show/hide password, copy)
+            const icons = document.querySelectorAll(`#${tabId} .show-password, #${tabId} .copy-password`);
+            icons.forEach(icon => {
+                icon.style.color = color;
+            });
+        }
+
+        // Settings Button Event Listener
+        settingsBtn.addEventListener('click', function () {
+            activateTab('settings', null);
+            body.style.backgroundImage = `url('${settingsBg}')`;
+
+            // Load settings from localStorage
+            loadSettings();
+        });
+
+        // Show/Hide Password in PassCheck Tab
+        const passwordInput = document.querySelector('#password');
+        const showPasswordBtn = document.querySelector('#show-password');
+
+        showPasswordBtn.addEventListener('click', function () {
+            const inputType = passwordInput.getAttribute('type');
+            if (inputType === 'password') {
+                passwordInput.setAttribute('type', 'text');
+                showPasswordBtn.textContent = '🙈';
+            } else {
+                passwordInput.setAttribute('type', 'password');
+                showPasswordBtn.textContent = '👁️';
+            }
+        });
+
+        // Generate Password Functionality
+        const generateBtnAction = document.getElementById('generate-password-btn');
+        const generatedPasswordField = document.getElementById('generated-password');
+        const copyPasswordBtn = document.getElementById('copy-password');
+
+        generateBtnAction.addEventListener('click', async function () {
+            // Fetch the generated password from the server
+            try {
+                const response = await fetch('/generate_password', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                generatedPasswordField.value = data.generated_password;
+            } catch (error) {
+                alert('Failed to generate password. Please try again.');
+                console.error('Error:', error);
+            }
+        });
+
+        // Copy generated password to clipboard
+        copyPasswordBtn.addEventListener('click', function () {
+            generatedPasswordField.select();
+            document.execCommand('copy');
+            alert('Password copied to clipboard!');
+        });
+
+        // Password Input Event Listener for PassCheck
+        const feedbackList = document.getElementById('feedback-list');
+        const scoreText = document.getElementById('score');
+        const strengthCircle = document.getElementById('strength-circle'); // Strength circle element
+
+        async function analyzePassword() {
+            const password = passwordInput.value;
+
+            if (password === '') {
+                // Reset the card when the input field is empty
+                scoreText.innerHTML = 'Similarity: 0% | Score: 0/100 | Unmatched Percentage: 0%';
+                feedbackList.innerHTML = '';
+                strengthCircle.style.background = 'red';
+                return;
+            }
+
+            // Retrieve personal information from localStorage
+            let usePersonalInfo = localStorage.getItem('usePersonalInfo') === 'true';
+            let personalInfo = {};
+            if (usePersonalInfo) {
+                personalInfo = JSON.parse(localStorage.getItem('personalInfo')) || {};
+            }
+
+            // Fetch data from the server
+            try {
+                const response = await fetch('/analyze_password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        password: password,
+                        name: personalInfo.fullName || '',
+                        dob: personalInfo.dob || '',
+                        location: personalInfo.location || '',
+                        phone: personalInfo.phone || '',
+                        email: personalInfo.email || ''
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                const feedbackItems = [];
+
+                // Clear previous feedback
+                feedbackList.innerHTML = '';
+
+                // Update score, similarity, and unmatched percentage
+                scoreText.innerHTML = `Similarity: ${data.similarity_percentage}% | Score: ${data.final_score}/100 | Unmatched Percentage: ${data.unmatched_percentage}%`;
+
+                // Update strength circle based on the final score
+                if (data.final_score === 0) {
+                    strengthCircle.style.background = '#8B0000'; // Dark Red
+                } else if (data.final_score > 0 && data.final_score <= 20) {
+                    strengthCircle.style.background = '#ff6666'; // Red
+                } else if (data.final_score > 20 && data.final_score <= 40) {
+                    strengthCircle.style.background = '#ff9933'; // Orange
+                } else if (data.final_score > 40 && data.final_score <= 60) {
+                    strengthCircle.style.background = '#ffcc00'; // Yellow
+                } else if (data.final_score > 60 && data.final_score <= 80) {
+                    strengthCircle.style.background = '#99cc33'; // Light Green
+                } else if (data.final_score > 80 && data.final_score <= 95) {
+                    strengthCircle.style.background = '#33cc33'; // Green
+                } else if (data.final_score > 95 && data.final_score <= 100) {
+                    // Gradient for Light Green and Blue
+                    strengthCircle.style.background = 'linear-gradient(to right, #66ff66, #66ccff)';
+                }
+
+                // Add feedback items
+                data.feedback.forEach(item => {
+                    feedbackItems.push(`<li class="card__list_item">
+                        <span class="check ${item.includes('Strength') ? 'true-check' : 'false-check'}">
+                            ${item.includes('Strength') ? '✔️' : '❌'}
+                        </span>
+                        <span class="list_text">${item}</span>
+                    </li>`);
+                });
+
+                // Inject feedback into the DOM
+                feedbackList.innerHTML = feedbackItems.join('');
+            } catch (error) {
+                console.error('Error:', error);
+                scoreText.innerHTML = 'Similarity: N/A | Score: N/A | Unmatched Percentage: N/A';
+                feedbackList.innerHTML = '<li class="card__list_item"><span class="false-check">❌</span><span class="list_text">Failed to retrieve feedback.</span></li>';
+                strengthCircle.style.background = 'red';
+            }
+        }
+
+        // Add event listener to PassCheck inputs
+        passwordInput.addEventListener('input', analyzePassword);
+
+        // Crack Password Functionality
+        const crackPasswordBtn = document.getElementById('crack-password-btn');
+        const passwordToCrackInput = document.getElementById('password-to-crack');
+        const showProcessSwitch = document.getElementById('show-process-switch');
+        const processContainer = document.getElementById('process-container');
+        const processList = document.getElementById('process-list');
+        const resultText = document.getElementById('result-text');
+        const timerText = document.getElementById('timer-text');
+
+        crackPasswordBtn.addEventListener('click', async function () {
+            const password = passwordToCrackInput.value;
+            if (!password) {
+                alert("Please enter a password to crack.");
+                return;
+            }
+
+            // Retrieve the time limit from settings
+            let timeLimit = localStorage.getItem('crackTimeLimit');
+            if (!timeLimit) {
+                timeLimit = 120; // Default time limit
+            } else {
+                timeLimit = parseInt(timeLimit);
+            }
+
+            // Retrieve personal information from settings
+            let usePersonalInfo = localStorage.getItem('usePersonalInfo') === 'true';
+            let personalInfo = {};
+            if (usePersonalInfo) {
+                personalInfo = JSON.parse(localStorage.getItem('personalInfo')) || {};
+            }
+
+            // Clear previous process list and hide the process container initially
+            processList.innerHTML = '';
+            processContainer.style.display = 'none';
+            resultText.innerHTML = '';
+            timerText.textContent = '';
+
+            // Start timer
+            let startTime = new Date().getTime();
+
+            // Update timer every second
+            const intervalId = setInterval(() => {
+                let currentTime = new Date().getTime();
+                let elapsedTime = Math.floor((currentTime - startTime) / 1000);
+                let remainingTime = timeLimit - elapsedTime;
+
+                // Display the remaining time
+                if (remainingTime >= 0) {
+                    timerText.textContent = `Time remaining: ${remainingTime}s`;
+                } else {
+                    clearInterval(intervalId);
+                    timerText.textContent = "Time's up!";
+                }
+            }, 1000);
+
+            try {
+                // Build query parameters
+                let queryParams = `time_limit=${timeLimit}&use_personal_info=${usePersonalInfo}`;
+
+                // If using personal information, append it to the query parameters
+                if (usePersonalInfo) {
+                    queryParams += `&full_name=${encodeURIComponent(personalInfo.fullName || '')}`;
+                    queryParams += `&dob=${encodeURIComponent(personalInfo.dob || '')}`;
+                    queryParams += `&location=${encodeURIComponent(personalInfo.location || '')}`;
+                    queryParams += `&phone=${encodeURIComponent(personalInfo.phone || '')}`;
+                    queryParams += `&email=${encodeURIComponent(personalInfo.email || '')}`;
+                }
+
+                // Create an EventSource to receive real-time cracking updates
+                const eventSource = new EventSource(`/crack_password_stream/${encodeURIComponent(password)}?${queryParams}`);
+
+                eventSource.onmessage = function (event) {
+                    const message = event.data;
+
+                    // Show process only if the switch is enabled
+                    if (showProcessSwitch.checked) {
+                        processContainer.style.display = 'block';
+                        const listItem = document.createElement('li');
+                        listItem.textContent = message;
+                        processList.appendChild(listItem);
+
+                        // Scroll to the bottom of the container as new items are added
+                        processContainer.scrollTop = processContainer.scrollHeight;
+                    }
+
+                    // If the message contains the final result
+                    if (message.includes('Password cracked successfully') || message.includes('Time limit exceeded') || message.includes('Password found') || message.includes('Password cracked using personal info')) {
+                        let endTime = new Date().getTime();
+                        let totalTimeTaken = (endTime - startTime) / 1000;
+
+                        // Show the final result and time taken
+                        resultText.textContent = `${message} Time taken: ${totalTimeTaken.toFixed(2)} seconds.`;
+                        eventSource.close();
+                        clearInterval(intervalId);
+                    }
+                };
+
+                eventSource.onerror = function () {
+                    eventSource.close();
+                    resultText.textContent = 'Error occurred during cracking. Please try again.';
+                    clearInterval(intervalId);
+                };
+
+            } catch (error) {
+                console.error('Error occurred during cracking:', error);
+                resultText.textContent = 'Error occurred during cracking. Please try again.';
+                clearInterval(intervalId);
+            }
+        });
+
+        // Toggle Show/Hide Cracking Process
+        showProcessSwitch.addEventListener('change', function () {
+            if (this.checked) {
+                processContainer.style.display = 'block';
+            } else {
+                processContainer.style.display = 'none';
+                window.scrollTo(0, 0);
+            }
+        });
+
+        // Settings Tab Functionality
+        const saveSettingsBtn = document.getElementById('save-settings-btn');
+        const usePersonalInfoCheckbox = document.getElementById('use-personal-info');
+        const personalInfoFields = document.getElementById('personal-info-fields');
+
+        // Show or hide personal information fields based on checkbox
+        usePersonalInfoCheckbox.addEventListener('change', function () {
+            if (this.checked) {
+                personalInfoFields.style.display = 'block';
+            } else {
+                personalInfoFields.style.display = 'none';
+            }
+        });
+
+        // Event listener for saving settings
+        saveSettingsBtn.addEventListener('click', function () {
+            // Get the time limit value
+            const timeLimitInput = document.getElementById('crack-time-limit');
+            let timeLimit = parseInt(timeLimitInput.value);
+            if (isNaN(timeLimit) || timeLimit <= 0) {
+                alert('Please enter a valid time limit in seconds.');
+                return;
+            }
+
+            // Save time limit to localStorage
+            localStorage.setItem('crackTimeLimit', timeLimit);
+
+            // Get personal information if the checkbox is checked
+            let usePersonalInfo = usePersonalInfoCheckbox.checked;
+            localStorage.setItem('usePersonalInfo', usePersonalInfo);
+
+            let personalInfo = {};
+            if (usePersonalInfo) {
+                personalInfo.fullName = document.getElementById('settings-full-name').value;
+                personalInfo.dob = document.getElementById('settings-dob').value;
+                personalInfo.location = document.getElementById('settings-location').value;
+                personalInfo.phone = document.getElementById('settings-phone').value;
+                personalInfo.email = document.getElementById('settings-email').value;
+
+                // Save personal information to localStorage
+                localStorage.setItem('personalInfo', JSON.stringify(personalInfo));
+            } else {
+                // Remove personal information from localStorage if not using
+                localStorage.removeItem('personalInfo');
+            }
+
+            alert('Settings saved successfully!');
+        });
+
+        // Load settings function
+        function loadSettings() {
+            // Load time limit
+            const timeLimitInput = document.getElementById('crack-time-limit');
+            let timeLimit = localStorage.getItem('crackTimeLimit');
+            if (timeLimit) {
+                timeLimitInput.value = timeLimit;
+            }
+
+            // Load personal information usage
+            let usePersonalInfo = localStorage.getItem('usePersonalInfo') === 'true';
+            usePersonalInfoCheckbox.checked = usePersonalInfo;
+            if (usePersonalInfo) {
+                personalInfoFields.style.display = 'block';
+                let personalInfo = JSON.parse(localStorage.getItem('personalInfo')) || {};
+                document.getElementById('settings-full-name').value = personalInfo.fullName || '';
+                document.getElementById('settings-dob').value = personalInfo.dob || '';
+                document.getElementById('settings-location').value = personalInfo.location || '';
+                document.getElementById('settings-phone').value = personalInfo.phone || '';
+                document.getElementById('settings-email').value = personalInfo.email || '';
+            } else {
+                personalInfoFields.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
